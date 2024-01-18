@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineSubsystem.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "MPShotterCharacter.generated.h"
@@ -69,5 +70,11 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+
+public:
+	//pointer to the online session interface
+	//IOnlineSessionPtr SessionInterface;
+	TSharedPtr<class IOnlineSession,ESPMode::ThreadSafe> OnlineSessionInterface;
 };
 
