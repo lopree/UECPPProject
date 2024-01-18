@@ -10,9 +10,6 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "OnlineSubsystem.h"
-#include "Interfaces/OnlineSessionInterface.h"
-
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
@@ -55,29 +52,9 @@ AMPShotterCharacter::AMPShotterCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
-	//--------------------------------------Custom-----------------------------------
-	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
-	if (OnlineSubsystem)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[Subsystem]Online Subsystem Found: %s"), *OnlineSubsystem->GetSubsystemName().ToString());
-		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
-		//在屏幕中打印输出信息
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				-1,
-				15.f,
-				FColor::Blue,
-				FString::Printf(TEXT("[Subsystem]Online Subsystem Found: %s"), *OnlineSubsystem->GetSubsystemName().ToString())
-			);
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[Subsystem]Online Subsystem Not Found"));
-	}
+	
+	
 }
-
 void AMPShotterCharacter::BeginPlay()
 {
 	// Call the base class  
