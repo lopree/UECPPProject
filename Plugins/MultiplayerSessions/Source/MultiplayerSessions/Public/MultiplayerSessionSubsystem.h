@@ -58,4 +58,8 @@ private:
 	FDelegateHandle DestroySessionCompleteDelegateHandle;
 	FOnStartSessionCompleteDelegate OnStartSessionCompleteDelegate;
 	FDelegateHandle StartSessionCompleteDelegateHandle;
+	//解决创建会话时，销毁还没执行，然后导致的没有即使创建
+	bool bCreateSessionOnDestroy{false};
+	int32 LastNumPublicConnections;
+	FString LastMatchType;
 };

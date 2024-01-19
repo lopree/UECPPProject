@@ -13,7 +13,7 @@ class MULTIPLAYERSESSIONS_API UMenu : public UUserWidget
 public:
 	//关卡蓝图中调用
 	UFUNCTION(BlueprintCallable)
-	void MenuSetUp(int NumPublicConnections = 4, FString MatchType = TEXT("FreeForAll"));
+	void MenuSetUp(int NumPublicConnections = 4, FString MatchType = TEXT("FreeForAll"),FString LObbyPath = TEXT("/Game/Maps/LobbyMap"));
 protected:
 	virtual bool Initialize() override;
 	virtual void NativeDestruct() override;
@@ -43,4 +43,5 @@ private:
 
 	int32 CustomNumPublicConnections{4};
 	FString MatchType{TEXT("FreeForAll")};
+	FString PathToLobby{TEXT("")};
 };
