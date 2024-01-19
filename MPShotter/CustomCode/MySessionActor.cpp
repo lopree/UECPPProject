@@ -1,7 +1,8 @@
 #include "MySessionActor.h"
 #include "OnlineSessionSettings.h"
+#include "OnlineSubsystem.h"
+#include "Online/OnlineSessionNames.h"
 
-// Sets default values
 AMySessionActor::AMySessionActor()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -24,20 +25,26 @@ AMySessionActor::AMySessionActor()
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
 				-1,
 				15.f,
 				FColor::Blue,
 				FString::Printf(TEXT("[Subsystem]Online Subsystem Not Found"))
 			);
+		}
 	}
 	OnCreateSessionCompleteDelegate.BindUObject(this, &AMySessionActor::OnCreateSessionComplete);
+	OnFindSessionsCompleteDelegate.BindUObject(this, &AMySessionActor::OnFindSessionComplete);
+	OnJoinSessionCompleteDelegate.BindUObject(this, &AMySessionActor::OnJoinSessionComplete);
 }
 
 void AMySessionActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	//按键绑定
+	InputComponent->BindAction("CreateSession", IE_Pressed, this, &AMySessionActor::CreateMySession);
 }
 
 void AMySessionActor::Tick(float DeltaTime)
@@ -66,15 +73,32 @@ void AMySessionActor::CreateMySession()
 	SessionSettings->bAllowJoinInProgress = true;
 	SessionSettings->bAllowJoinViaPresence = true;
 	SessionSettings->bUsesPresence = true;
-SessionSettings->bShouldAdvertise = true;
+	SessionSettings->bShouldAdvertise = true;
+	SessionSettings->bUseLobbiesIfAvailable = true;
+	SessionSettings->Set(FName("MatchType"), FString("FreeForAll"), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 	const ULocalPlayer *LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
 	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
 }
+
+void AMySessionActor::JoinMySession()
+{
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+	OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteDelegate);
+	SessionSearch = MakeShareable(new FOnlineSessionSearch());
+	SessionSearch->MaxSearchResults = 100;
+	SessionSearch->bIsLanQuery = false;
+	SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+	const ULocalPlayer *LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	OnlineSessionInterface->FindSessions(*LocalPlayer->GetPreferredUniqueNetId(), SessionSearch.ToSharedRef());
+}
+
 void AMySessionActor::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
-		//
 		if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(
@@ -83,6 +107,12 @@ void AMySessionActor::OnCreateSessionComplete(FName SessionName, bool bWasSucces
 				FColor::Blue,
 				FString::Printf(TEXT("[Subsystem]Create Sesson: %s"), *SessionName.ToString())
 			);
+		}
+		//切换关卡
+		UWorld *World = GetWorld();
+		if (World)
+		{
+			World->ServerTravel("/Game/Maps/LobbyMap?listen");
 		}
 	}else
 	{
@@ -94,6 +124,55 @@ void AMySessionActor::OnCreateSessionComplete(FName SessionName, bool bWasSucces
 				FColor::Red,
 				FString::Printf(TEXT("[Subsystem]Failed to Create Sesson!"))
 			);
+		}
+	}
+}
+
+void AMySessionActor::OnFindSessionComplete(bool bWasSuccessful)
+{
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+	//循环遍历找到的结果
+	for(auto res : SessionSearch->SearchResults)
+	{
+		FString id = res.GetSessionIdStr();
+		FString name = res.Session.OwningUserName;
+		FString MatchType;
+		res.Session.SessionSettings.Get(FName("MatchType"), MatchType);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Red,
+				FString::Printf(TEXT("[Subsystem]ID: %s, Name: %s"), *id, *name)
+			);
+		}
+		if (MatchType == "FreeForAll")
+		{
+			OnlineSessionInterface->AddOnJoinSessionCompleteDelegate_Handle(OnJoinSessionCompleteDelegate);
+			const ULocalPlayer *LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+			OnlineSessionInterface->JoinSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, res);
+		}
+		UE_LOG(LogTemp, Warning, TEXT("[Subsystem]Find Session: %s"), *res.GetSessionIdStr());
+	}
+}
+
+void AMySessionActor::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+{
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+	FString Address;
+	if (OnlineSessionInterface->GetResolvedConnectString(SessionName, Address))
+	{
+		APlayerController *PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
+		if (PlayerController)
+		{
+			PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 		}
 	}
 }
