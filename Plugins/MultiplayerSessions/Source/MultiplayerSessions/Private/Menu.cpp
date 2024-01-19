@@ -1,5 +1,6 @@
 #include "Menu.h"
 #include "MultiplayerSessionSubsystem.h"
+#include "OnlineSessionSettings.h"
 #include "Components/Button.h"
 
 void UMenu::MenuSetUp(int32 NumPublicConnections, FString TypeOfMatch)
@@ -10,7 +11,7 @@ void UMenu::MenuSetUp(int32 NumPublicConnections, FString TypeOfMatch)
 	SetVisibility(ESlateVisibility::Visible);
 	//bIsFocusable = true;
 	SetFocus();
-	UWorld* World = GetWorld();
+	const UWorld* World = GetWorld();
 	if (World)
 	{
 		APlayerController* PlayerController = World->GetFirstPlayerController();
@@ -23,7 +24,7 @@ void UMenu::MenuSetUp(int32 NumPublicConnections, FString TypeOfMatch)
 			PlayerController->SetShowMouseCursor(true);
 		}
 	}
-	UGameInstance* GameInstance = GetGameInstance();
+	const UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance)
 	{
 		MultiplayerSessionSubsystem = GameInstance->GetSubsystem<UMultiplayerSessionSubsystem>();
@@ -31,6 +32,10 @@ void UMenu::MenuSetUp(int32 NumPublicConnections, FString TypeOfMatch)
 	if (MultiplayerSessionSubsystem)
 	{
 		MultiplayerSessionSubsystem->MultiplayerOnCreateSessionsComplete.AddDynamic(this,&UMenu::OnCreateSession);
+		MultiplayerSessionSubsystem->MultiplayerOnFindSessionComplete.AddUObject(this,&UMenu::OnFindSession);
+		MultiplayerSessionSubsystem->MultiplayerOnJoinSessionComplete.AddUObject(this,&UMenu::OnJoinSession);
+		MultiplayerSessionSubsystem->MultiplayerOnDestroySessionComplete.AddDynamic(this,&UMenu::OnDestroySession);
+		MultiplayerSessionSubsystem->MultiplayerOnStartSessionComplete.AddDynamic(this,&UMenu::OnStartSession);
 	}
 	
 }
@@ -80,6 +85,52 @@ void UMenu::OnCreateSession(bool bWasSuccessful)
 	}
 }
 
+void UMenu::OnFindSession(const TArray<FOnlineSessionSearchResult>& SearchResults, bool bWasSuccessful)
+{
+	if (MultiplayerSessionSubsystem == nullptr)
+	{
+		return;
+	}
+	//当找到Session的时候会执行这个回调，传进来的参数是一个数组，里面存储了所有的Session
+	//遍历所有Session
+	for(auto SessionResult : SearchResults)
+	{
+		//检查Session的匹配类型
+		FString SettingsValue;
+		SessionResult.Session.SessionSettings.Get(FName("MatchType"),SettingsValue);
+		if (SettingsValue == MatchType)
+		{
+			//如果匹配类型相同，就加入这个Session
+			MultiplayerSessionSubsystem->JoinSession(SessionResult);
+			return;
+		}
+	}
+}
+
+void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
+{
+	if (const IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get())
+	{
+		if (const IOnlineSessionPtr SessionInterface = OnlineSubsystem->GetSessionInterface(); SessionInterface.IsValid())
+		{
+			FString Address;
+			SessionInterface->GetResolvedConnectString(NAME_GameSession,Address);
+			if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+			{
+				PlayerController->ClientTravel(Address,ETravelType::TRAVEL_Absolute);
+			}
+		}
+	}
+}
+
+void UMenu::OnDestroySession(bool bWasSuccessful)
+{
+}
+
+void UMenu::OnStartSession(bool bWasSuccessful)
+{
+}
+
 void UMenu::HostBtnClicked()
 {
 	if (MultiplayerSessionSubsystem)
@@ -91,20 +142,21 @@ void UMenu::HostBtnClicked()
 
 void UMenu::JoinBtnClicked()
 {
-	if (GEngine)
+	if (MultiplayerSessionSubsystem)
 	{
-		GEngine->AddOnScreenDebugMessage(-1,15.f,FColor::Red,TEXT("JoinBtnClicked"));
+		//创建会话
+		MultiplayerSessionSubsystem->FindSession(100);
 	}
 }
 
 void UMenu::MenuTearDown()
 {
 	RemoveFromParent();
-	if(UWorld* World = GetWorld())
+	if(const UWorld* World = GetWorld())
 	{
 		if (APlayerController* PlayerController = World->GetFirstPlayerController())
 		{
-			FInputModeGameOnly InputModeData;
+			const FInputModeGameOnly InputModeData;
 			PlayerController->SetInputMode(InputModeData);
 			PlayerController->SetShowMouseCursor(false);
 		}

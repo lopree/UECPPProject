@@ -9,6 +9,10 @@
 
 //声明一个动态多播带有一个bool参数,在Menu中绑定回调
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnCreateSessionsComplete,bool,bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FMultiplayerOnFindSessionComplete,const TArray<FOnlineSessionSearchResult>& SearchResults,bool bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_OneParam(FMultiplayerOnJoinSessionComplete,EOnJoinSessionCompleteResult::Type Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnDestroySessionComplete,bool,bWasSuccessful);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnStartSessionComplete,bool,bWasSuccessful);
 UCLASS()
 class MULTIPLAYERSESSIONS_API UMultiplayerSessionSubsystem : public UGameInstanceSubsystem
 {
@@ -24,8 +28,12 @@ public:
 	void JoinSession(const FOnlineSessionSearchResult& SearchResult);
 	void DestroySession();
 	void StartSession();
-	//动态多播
+	//自定义委托
 	FMultiplayerOnCreateSessionsComplete MultiplayerOnCreateSessionsComplete;
+	FMultiplayerOnFindSessionComplete MultiplayerOnFindSessionComplete;
+	FMultiplayerOnJoinSessionComplete MultiplayerOnJoinSessionComplete;
+	FMultiplayerOnDestroySessionComplete MultiplayerOnDestroySessionComplete;
+	FMultiplayerOnStartSessionComplete MultiplayerOnStartSessionComplete;
 protected:
 	//回调
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
@@ -37,6 +45,8 @@ private:
 	IOnlineSessionPtr SessionInterface;
 	//Session Setting 存储最后一次会话设定，方便下次创建
 	TSharedPtr<class FOnlineSessionSettings> LastSessionSettings;
+	//搜索参数
+	TSharedPtr<class FOnlineSessionSearch> LastSearchSettings;
 	//委托
 	FOnCreateSessionCompleteDelegate OnCreateSessionCompleteDelegate;
 	FDelegateHandle CreateSessionCompleteDelegateHandle;
