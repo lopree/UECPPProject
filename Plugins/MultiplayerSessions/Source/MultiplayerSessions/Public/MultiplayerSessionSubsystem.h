@@ -7,9 +7,8 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "MultiplayerSessionSubsystem.generated.h"
 
-/**
- * 
- */
+//声明一个动态多播带有一个bool参数,在Menu中绑定回调
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnCreateSessionsComplete,bool,bWasSuccessful);
 UCLASS()
 class MULTIPLAYERSESSIONS_API UMultiplayerSessionSubsystem : public UGameInstanceSubsystem
 {
@@ -25,6 +24,8 @@ public:
 	void JoinSession(const FOnlineSessionSearchResult& SearchResult);
 	void DestroySession();
 	void StartSession();
+	//动态多播
+	FMultiplayerOnCreateSessionsComplete MultiplayerOnCreateSessionsComplete;
 protected:
 	//回调
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);

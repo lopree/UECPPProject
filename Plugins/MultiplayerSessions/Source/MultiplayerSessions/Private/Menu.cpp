@@ -1,5 +1,4 @@
 #include "Menu.h"
-
 #include "MultiplayerSessionSubsystem.h"
 #include "Components/Button.h"
 
@@ -9,7 +8,8 @@ void UMenu::MenuSetUp(int32 NumPublicConnections, FString TypeOfMatch)
 	MatchType = TypeOfMatch;
 	AddToViewport();
 	SetVisibility(ESlateVisibility::Visible);
-	bIsFocusable = true;
+	//bIsFocusable = true;
+	SetFocus();
 	UWorld* World = GetWorld();
 	if (World)
 	{
@@ -28,6 +28,11 @@ void UMenu::MenuSetUp(int32 NumPublicConnections, FString TypeOfMatch)
 	{
 		MultiplayerSessionSubsystem = GameInstance->GetSubsystem<UMultiplayerSessionSubsystem>();
 	}
+	if (MultiplayerSessionSubsystem)
+	{
+		MultiplayerSessionSubsystem->MultiplayerOnCreateSessionsComplete.AddDynamic(this,&UMenu::OnCreateSession);
+	}
+	
 }
 
 bool UMenu::Initialize()
@@ -53,21 +58,34 @@ void UMenu::NativeDestruct()
 	MenuTearDown();
 }
 
-void UMenu::HostBtnClicked()
+void UMenu::OnCreateSession(bool bWasSuccessful)
 {
-	if (GEngine)
+	if (bWasSuccessful)
 	{
-		GEngine->AddOnScreenDebugMessage(-1,15.f,FColor::Red,TEXT("HostBtnClicked"));
-	}
-	if (MultiplayerSessionSubsystem)
-	{
-		//创建会话
-		MultiplayerSessionSubsystem->CreatSession(CustomNumPublicConnections,MatchType);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1,15.f,FColor::Yellow,TEXT("Create Session Success"));
+		}
 		//进入下一个Map
 		if (UWorld* World = GetWorld())
 		{
 			World->ServerTravel("/Game/Maps/LobbyMap?listen");
 		}
+	}else
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1,15.f,FColor::Red,TEXT("Create Session Failed"));
+		}
+	}
+}
+
+void UMenu::HostBtnClicked()
+{
+	if (MultiplayerSessionSubsystem)
+	{
+		//创建会话
+		MultiplayerSessionSubsystem->CreatSession(CustomNumPublicConnections,MatchType);
 	}
 }
 

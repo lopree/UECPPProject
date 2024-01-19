@@ -15,7 +15,10 @@ public:
 	void MenuSetUp(int NumPublicConnections = 4, FString MatchType = TEXT("FreeForAll"));
 protected:
 	virtual bool Initialize() override;
-	virtual void NativeDestruct() override;;
+	virtual void NativeDestruct() override;
+	//自定义动态多播的回调
+	UFUNCTION()
+	void OnCreateSession(bool bWasSuccessful);
 private:
 	UPROPERTY(meta=(BindWidget))
 	UButton* HostButton;

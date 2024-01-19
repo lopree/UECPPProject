@@ -41,6 +41,8 @@ void UMultiplayerSessionSubsystem::CreatSession(int32 NumPublicConnections, FStr
 	if (!SessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(),NAME_GameSession,*LastSessionSettings))
 	{
 		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
+		//通知自定义的动态多播，没有成功创建
+		MultiplayerOnCreateSessionsComplete.Broadcast(false);
 	}
 }
 
@@ -62,6 +64,13 @@ void UMultiplayerSessionSubsystem::StartSession()
 
 void UMultiplayerSessionSubsystem::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
+	//链接成功，先清理委托
+	if (SessionInterface)
+	{
+		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
+	}
+	//通知自定义的动态多播，创建成功
+	MultiplayerOnCreateSessionsComplete.Broadcast(bWasSuccessful);
 }
 
 void UMultiplayerSessionSubsystem::OnFindSessionsComplete(bool bWasSuccessful)
