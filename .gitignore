@@ -1,0 +1,16 @@
+.idea
+.vs
+Binaries
+Build
+Config
+Content
+DerivedDataCache
+Intermediate
+Plugins/MultiplayerSessions/Binaries
+Plugins/MultiplayerSessions/Intermediate
+Plugins/MultiplayerSessions/Resources
+Plugins/MultiplayerSessions/Content
+Saved
+.vsconfig
+MPShotter.sln
+MPShotter.uproject
