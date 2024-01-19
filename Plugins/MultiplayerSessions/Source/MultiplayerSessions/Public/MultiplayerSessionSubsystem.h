@@ -16,7 +16,7 @@ class MULTIPLAYERSESSIONS_API UMultiplayerSessionSubsystem : public UGameInstanc
 	GENERATED_BODY()
 public:
 	UMultiplayerSessionSubsystem();
-	//触发方法：
+	//在UI界面（Menu中）,触发方法：
 	//创建
 	void CreatSession(int32 NumPublicConnections, FString MatchType);
 	//寻找
