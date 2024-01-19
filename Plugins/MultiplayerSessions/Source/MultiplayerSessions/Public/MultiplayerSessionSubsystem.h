@@ -34,6 +34,8 @@ protected:
 	void OnStartSessionComplete(FName SessionName, bool bWasSuccessful);
 private:
 	IOnlineSessionPtr SessionInterface;
+	//Session Setting 存储最后一次会话设定，方便下次创建
+	TSharedPtr<class FOnlineSessionSettings> LastSessionSettings;
 	//委托
 	FOnCreateSessionCompleteDelegate OnCreateSessionCompleteDelegate;
 	FDelegateHandle CreateSessionCompleteDelegateHandle;
